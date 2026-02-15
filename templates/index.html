@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Language Analyzer</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sign Language Analyzer</h1>
+            <p>Upload a video to analyze sign language gestures and generate SiGML for avatar animation</p>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <h2>Upload Video</h2>
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="video">Select Video File:</label>
+                        <input type="file" id="video" name="video" accept="video/*" required>
+                        <small>Supported formats: MP4, AVI, MOV, etc. (Max 100MB)</small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="max_frames">Max Frames (optional):</label>
+                            <input type="number" id="max_frames" name="max_frames" value="300" min="10" max="1000">
+                            <small>Maximum number of frames to process</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="frame_skip">Frame Skip:</label>
+                            <input type="number" id="frame_skip" name="frame_skip" value="2" min="1" max="10">
+                            <small>Process every Nth frame</small>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="analyzeBtn">Analyze Video</button>
+                </form>
+            </div>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Processing video... This may take a moment.</p>
+                <div class="progress-bar">
+                    <div id="progress" class="progress"></div>
+                </div>
+            </div>
+
+            <div id="results" class="results hidden">
+                <div class="results-header">
+                    <h2>Analysis Results</h2>
+                    <div class="summary-cards">
+                        <div class="card">
+                            <h3>Frames Processed</h3>
+                            <p id="framesCount">0</p>
+                        </div>
+                        <div class="card">
+                            <h3>Gestures Detected</h3>
+                            <p id="gesturesCount">0</p>
+                        </div>
+                    </div>
+
+                    <div class="gesture-breakdown">
+                        <h3>Gesture Breakdown</h3>
+                        <div class="breakdown-grid">
+                            <div class="breakdown-item">
+                                <span class="label">Two-Handed:</span>
+                                <span id="twoHandedCount" class="value">0</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="label">With Head Movement:</span>
+                                <span id="headMovementCount" class="value">0</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="label">Handshape Only:</span>
+                                <span id="handshapeCount" class="value">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="showTab('gestures')">Detected Gestures</button>
+                    <button class="tab-btn" onclick="showTab('sigml')">SiGML Output</button>
+                </div>
+
+                <div id="gesturesTab" class="tab-content active">
+                    <div class="gestures-list" id="gesturesList">
+                        <!-- Gestures will be populated here -->
+                    </div>
+                </div>
+
+                <div id="sigmlTab" class="tab-content">
+                    <div class="sigml-container">
+                        <div class="sigml-actions">
+                            <button onclick="downloadSigML()" class="btn-primary">Download SiGML</button>
+                            <button onclick="copySigML()" class="btn-secondary">Copy to Clipboard</button>
+                        </div>
+                        <pre id="sigmlContent" class="sigml-preview"></pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
