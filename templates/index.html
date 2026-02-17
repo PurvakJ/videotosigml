@@ -4,7 +4,207 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Language Analyzer</title>
+    
+    <!-- Include CWASA Avatar Scripts -->
+    <script type="text/javascript" src="https://isl-tk.vishalpup.in/jas/loc2017/cwa/allcsa.js" defer></script>
+    <script language="javascript">
+        // CWASA Avatar Configuration
+        var initCfg = {
+            "avsbsl": ["marc", "luna", "siggi", "anna", "francoise", "beatrice", "candy", "darshan", "genie", "max", "monkey", "otis", "robotboy", "carmen", "dino", "dinoex", "dinototo", "bahia"],
+            "avSettings": { 
+                "avList": "avsbsl", 
+                "initAv": "marc", 
+                "initCamera": [0, 0.40, 2.54, 5, 18, 30, -1, -1], 
+            }
+        };
+    </script>
+    
     <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* Avatar Section Styles */
+        .avatar-section {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .avatar-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .avatar-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .avatar-display {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .avatar-frame {
+            width: 100%;
+            height: 350px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e0e0e0;
+            margin-bottom: 15px;
+        }
+
+        .avatar-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .avatar-selector {
+            margin-top: 15px;
+        }
+
+        .avatar-selector select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .avatar-selector select:hover {
+            border-color: #667eea;
+        }
+
+        .avatar-selector select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .avatar-text {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .avatar-text h4 {
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .avatar-text textarea {
+            width: 100%;
+            min-height: 200px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            padding: 10px;
+            resize: vertical;
+            background: #f8f9fa;
+        }
+
+        .avatar-text textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .avatar-download {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .avatar-download input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .avatar-download input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .avatar-download button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .avatar-download button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .load-avatar-btn {
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .load-avatar-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        /* Style avatar play/stop buttons */
+        .bttnPlaySiGMLText.av0,
+        .bttnStop.av0 {
+            padding: 10px 20px !important;
+            border: none !important;
+            border-radius: 5px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: all 0.3s !important;
+        }
+
+        .bttnPlaySiGMLText.av0 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+        }
+
+        .bttnStop.av0 {
+            background: #dc3545 !important;
+            color: white !important;
+        }
+
+        .bttnPlaySiGMLText.av0:hover,
+        .bttnStop.av0:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2) !important;
+        }
+
+        @media (max-width: 768px) {
+            .avatar-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -103,9 +303,246 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Avatar Section - Added here -->
+            <div class="avatar-section">
+                <h3>3D Avatar Animation</h3>
+                <div class="avatar-container">
+                    <div class="avatar-display">
+                        <div class="avatar-frame">
+                            <!-- Avatar display area -->
+                            <div class="CWASAAvatar av0" align="center" style="width: 100%; height: 100%;"></div>
+                        </div>
+                        
+                        <!-- Play/Stop controls -->
+                        <div class="avatar-controls">
+                            <div class="CWASAPlay av0" align="center"></div>
+                        </div>
+                        
+                        <!-- Avatar selector -->
+                        <div class="avatar-selector">
+                            <select id="avatarSelector" onchange="changeAvatar(this.value)">
+                                <option value="marc">Marc</option>
+                                <option value="luna">Luna</option>
+                                <option value="siggi">Siggi</option>
+                                <option value="anna">Anna</option>
+                                <option value="francoise">Francoise</option>
+                                <option value="beatrice">Beatrice</option>
+                                <option value="candy">Candy</option>
+                                <option value="darshan">Darshan</option>
+                                <option value="genie">Genie</option>
+                                <option value="max">Max</option>
+                                <option value="monkey">Monkey</option>
+                                <option value="otis">Otis</option>
+                                <option value="robotboy">Robotboy</option>
+                                <option value="carmen">Carmen</option>
+                                <option value="dino">Dino</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="avatar-display">
+                        <!-- SiGML text display -->
+                        <div class="avatar-text">
+                            <h4>Current SiGML</h4>
+                            <div class="CWASASiGMLText av0" align="center">
+                                <textarea class="txtaSiGMLText av0" placeholder="SiGML will appear here after analysis..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Download controls -->
+                        <div class="avatar-download">
+                            <input type="text" id="downfile" placeholder="filename.sigml" value="sign_animation.sigml" />
+                            <button onclick="downloadAvatarSigml()">Download</button>
+                        </div>
+                        
+                        <!-- Load to avatar button -->
+                        <button class="load-avatar-btn" onclick="loadSigmlToAvatar()">
+                            Load Current SiGML to Avatar
+                        </button>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
     <script src="/static/js/script.js"></script>
+    <script>
+        // Avatar functionality
+        let avatarInitialized = false;
+        let currentSigml = '';
+
+        // Initialize avatar when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initAvatar();
+        });
+
+        function initAvatar() {
+            if (typeof CWASA === 'undefined') {
+                console.log('Waiting for CWASA to load...');
+                setTimeout(initAvatar, 1000);
+                return;
+            }
+            
+            try {
+                CWASA.init(initCfg);
+                avatarInitialized = true;
+                console.log('Avatar initialized successfully');
+                
+                // Style the textarea
+                setTimeout(() => {
+                    const textarea = document.querySelector('.txtaSiGMLText.av0');
+                    if (textarea) {
+                        textarea.style.width = '100%';
+                        textarea.style.minHeight = '200px';
+                        textarea.style.fontFamily = 'monospace';
+                        textarea.style.fontSize = '12px';
+                    }
+                }, 500);
+            } catch (error) {
+                console.error('Failed to initialize avatar:', error);
+            }
+        }
+
+        function changeAvatar(avatarName) {
+            if (!avatarInitialized) {
+                alert('Avatar system is still loading. Please wait...');
+                return;
+            }
+            
+            try {
+                if (typeof CWASA !== 'undefined' && CWASA.setAvatar) {
+                    CWASA.setAvatar(avatarName);
+                    console.log('Avatar changed to:', avatarName);
+                }
+            } catch (error) {
+                console.error('Error changing avatar:', error);
+            }
+        }
+
+        function loadSigmlToAvatar() {
+            const sigmlContent = document.getElementById('sigmlContent').textContent;
+            
+            if (!sigmlContent || sigmlContent.includes('No gestures detected')) {
+                alert('Please analyze a video first to generate SiGML.');
+                return;
+            }
+            
+            if (!avatarInitialized) {
+                alert('Avatar system is still loading. Please wait...');
+                return;
+            }
+
+            try {
+                const textarea = document.querySelector('.txtaSiGMLText.av0');
+                if (textarea) {
+                    textarea.value = sigmlContent;
+                    
+                    // Trigger change event
+                    const event = new Event('input', { bubbles: true });
+                    textarea.dispatchEvent(event);
+                    
+                    alert('SiGML loaded to avatar! Click the Play button to animate.');
+                }
+            } catch (error) {
+                console.error('Error loading SiGML to avatar:', error);
+                alert('Failed to load SiGML to avatar.');
+            }
+        }
+
+        function downloadAvatarSigml() {
+            const sigmlContent = document.getElementById('sigmlContent').textContent;
+            
+            if (!sigmlContent || sigmlContent.includes('No gestures detected')) {
+                alert('Please analyze a video first to generate SiGML.');
+                return;
+            }
+            
+            const filenameInput = document.getElementById('downfile');
+            let filename = filenameInput.value.trim();
+            
+            if (!filename) {
+                filename = 'sign_animation.sigml';
+            }
+            
+            if (!filename.endsWith('.sigml')) {
+                filename += '.sigml';
+            }
+            
+            const blob = new Blob([sigmlContent], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Override the existing form submission to capture SiGML
+        const originalFormSubmit = document.getElementById('uploadForm').onsubmit;
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Call the original form submit logic (from your script.js)
+            if (typeof window.originalSubmit === 'function') {
+                window.originalSubmit(e);
+            }
+            
+            // After analysis, the SiGML will be in the pre tag
+            setTimeout(() => {
+                currentSigml = document.getElementById('sigmlContent').textContent;
+            }, 1000);
+        });
+
+        // Tab switching function
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        // Download SiGML function
+        function downloadSigML() {
+            const sigml = document.getElementById('sigmlContent').textContent;
+            if (!sigml || sigml.includes('No gestures detected')) {
+                alert('No SiGML to download.');
+                return;
+            }
+            
+            const blob = new Blob([sigml], {type: 'application/xml'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sign_language_${Date.now()}.sigml`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Copy SiGML function
+        function copySigML() {
+            const sigml = document.getElementById('sigmlContent').textContent;
+            if (!sigml || sigml.includes('No gestures detected')) {
+                alert('No SiGML to copy.');
+                return;
+            }
+            
+            navigator.clipboard.writeText(sigml).then(() => {
+                alert('SiGML copied to clipboard!');
+            }).catch(() => {
+                alert('Failed to copy to clipboard.');
+            });
+        }
+    </script>
 </body>
 </html>

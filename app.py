@@ -878,5 +878,8 @@ def download_sigml():
     )
 
 
+# Add this at the end of app.py
+app = app  # This exposes the Flask app for Vercel
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
