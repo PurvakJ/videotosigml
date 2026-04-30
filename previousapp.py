@@ -31,16 +31,6 @@ class HandShape(Enum):
     POINT = "point"
     VICTORY = "victory"
     L_SHAPE = "l_shape"
-    THUMB_ONLY = "thumb_only"
-    INDEX_ONLY = "index_only"
-    MIDDLE_ONLY = "middle_only"
-    RING_ONLY = "ring_only"
-    PINKY_ONLY = "pinky_only"
-    C_SHAPE = "c_shape"
-    PINCH = "pinch"
-    HOOK = "hook"
-    BENT = "bent"
-    SEVEN = "seven"
     OTHER = "other"
     UNKNOWN = "unknown"
 
@@ -50,11 +40,6 @@ class HandOrientation(Enum):
     DOWN = "DOWN"
     LEFT = "LEFT"
     RIGHT = "RIGHT"
-    UP_LEFT = "UP_LEFT"
-    UP_RIGHT = "UP_RIGHT"
-    DOWN_LEFT = "DOWN_LEFT"
-    DOWN_RIGHT = "DOWN_RIGHT"
-    FORWARD = "FORWARD"
     NEUTRAL = "NEUTRAL"
     UNKNOWN = "UNKNOWN"
 
@@ -65,7 +50,6 @@ class PalmOrientation(Enum):
     PALM_LEFT = "PALM_LEFT"
     PALM_RIGHT = "PALM_RIGHT"
     PALM_FORWARD = "PALM_FORWARD"
-    PALM_BACK = "PALM_BACK"
     UNKNOWN = "UNKNOWN"
 
 
@@ -74,40 +58,14 @@ class MovementDirection(Enum):
     DOWN = "DOWN"
     LEFT = "LEFT"
     RIGHT = "RIGHT"
-    UP_LEFT = "UP_LEFT"
-    UP_RIGHT = "UP_RIGHT"
-    DOWN_LEFT = "DOWN_LEFT"
-    DOWN_RIGHT = "DOWN_RIGHT"
     STILL = "STILL"
     UNKNOWN = "UNKNOWN"
 
 
 class Location(Enum):
-    HEAD_TOP = "head_top"
     HEAD = "head"
-    FOREHEAD = "forehead"
-    NOSE = "nose"
-    NOSTRILS = "nostrils"
-    LIPS = "lips"
-    TONGUE = "tongue"
-    TEETH = "teeth"
-    CHIN = "chin"
     UNDERCHIN = "underchin"
-    NECK = "neck"
-    SHOULDER_TOP = "shoulder_top"
-    SHOULDERS = "shoulders"
-    CHEST = "chest"
-    STOMACH = "stomach"
-    BELOW_STOMACH = "below_stomach"
-    EYEBROWS = "eyebrows"
-    EYES = "eyes"
-    EAR = "ear"
-    EAR_LOBE = "ear_lobe"
-    CHEEK = "cheek"
-    PALM = "palm"
     HANDBACK = "handback"
-    THUMB_SIDE = "thumb_side"
-    TOUCH = "touch"
     NEUTRAL = "neutral"
     UNKNOWN = "unknown"
 
@@ -179,7 +137,6 @@ class Gesture:
     hand: str = "left"
     confidence: float = 1.0
     description: str = ""
-    two_handed_type: Optional[str] = None  # For two-handed gestures
 
 
 # =========================
@@ -337,7 +294,7 @@ class SignLanguageAnalyzer:
         ]
 
     def _get_hand_orientation(self, landmarks: List[Landmark]) -> HandOrientation:
-        """Determine hand orientation from wrist to middle finger tip with 8 directions"""
+        """Determine hand orientation from wrist to middle finger tip"""
         if not landmarks or len(landmarks) < 21:
             return HandOrientation.UNKNOWN
 
@@ -354,63 +311,54 @@ class SignLanguageAnalyzer:
         norm_dx = dx / length
         norm_dy = dy / length
 
-        # Determine angle in degrees
-        angle = math.degrees(math.atan2(norm_dy, norm_dx))
-        
-        # Map angle to 8 directions
-        if -22.5 <= angle < 22.5:
-            return HandOrientation.RIGHT
-        elif 22.5 <= angle < 67.5:
-            return HandOrientation.UP_RIGHT
-        elif 67.5 <= angle < 112.5:
-            return HandOrientation.UP
-        elif 112.5 <= angle < 157.5:
-            return HandOrientation.UP_LEFT
-        elif angle >= 157.5 or angle < -157.5:
-            return HandOrientation.LEFT
-        elif -157.5 <= angle < -112.5:
-            return HandOrientation.DOWN_LEFT
-        elif -112.5 <= angle < -67.5:
-            return HandOrientation.DOWN
-        elif -67.5 <= angle < -22.5:
-            return HandOrientation.DOWN_RIGHT
-        
+        threshold = 0.3
+
+        if abs(norm_dy) > abs(norm_dx):
+            if norm_dy < -threshold:
+                return HandOrientation.UP
+            if norm_dy > threshold:
+                return HandOrientation.DOWN
+        else:
+            if norm_dx < -threshold:
+                return HandOrientation.LEFT
+            if norm_dx > threshold:
+                return HandOrientation.RIGHT
+
         return HandOrientation.NEUTRAL
 
     def _get_palm_orientation(self, landmarks: List[Landmark]) -> PalmOrientation:
-        """Determine palm orientation from hand landmarks"""
+        """Determine palm orientation from index and pinky MCP joints"""
         if not landmarks or len(landmarks) < 21:
             return PalmOrientation.UNKNOWN
 
         wrist = landmarks[0]
         index_mcp = landmarks[5]
         pinky_mcp = landmarks[17]
-        middle_mcp = landmarks[9]
 
-        # Calculate palm normal vector
-        palm_center_x = (index_mcp.x + pinky_mcp.x) / 2
-        palm_center_y = (index_mcp.y + pinky_mcp.y) / 2
-        
-        dx = palm_center_x - wrist.x
-        dy = palm_center_y - wrist.y
-        dz = (index_mcp.z + pinky_mcp.z) / 2 - wrist.z
+        dx = pinky_mcp.x - index_mcp.x
+        dy = pinky_mcp.y - index_mcp.y
 
-        # Determine orientation based on 3D vector
-        if abs(dz) > abs(dx) and abs(dz) > abs(dy):
-            if dz > 0:
-                return PalmOrientation.PALM_FORWARD
-            else:
-                return PalmOrientation.PALM_BACK
-        elif abs(dy) > abs(dx):
-            if dy < 0:
+        length = math.sqrt(dx * dx + dy * dy)
+        if length < 0.001:
+            return PalmOrientation.UNKNOWN
+
+        norm_dx = dx / length
+        norm_dy = dy / length
+
+        threshold = 0.3
+
+        if abs(norm_dy) > abs(norm_dx):
+            if norm_dy < -threshold:
                 return PalmOrientation.PALM_UP
-            else:
+            if norm_dy > threshold:
                 return PalmOrientation.PALM_DOWN
         else:
-            if dx < 0:
+            if norm_dx < -threshold:
                 return PalmOrientation.PALM_RIGHT
-            else:
+            if norm_dx > threshold:
                 return PalmOrientation.PALM_LEFT
+
+        return PalmOrientation.PALM_FORWARD
 
     def _get_head_orientation(self, landmarks: List[Landmark]) -> str:
         """Determine head orientation from pose landmarks"""
@@ -431,7 +379,7 @@ class SignLanguageAnalyzer:
     def _calculate_movement_direction(self, prev_pos: Landmark,
                                       curr_pos: Landmark,
                                       threshold: float) -> MovementDirection:
-        """Calculate movement direction between two points with 8 directions"""
+        """Calculate movement direction between two points"""
         dx = curr_pos.x - prev_pos.x
         dy = curr_pos.y - prev_pos.y
         speed = math.sqrt(dx * dx + dy * dy)
@@ -439,68 +387,36 @@ class SignLanguageAnalyzer:
         if speed < threshold:
             return MovementDirection.STILL
 
-        # Determine angle
-        angle = math.degrees(math.atan2(dy, dx))
-        
-        # Map to 8 directions
-        if -22.5 <= angle < 22.5:
-            return MovementDirection.RIGHT
-        elif 22.5 <= angle < 67.5:
-            return MovementDirection.UP_RIGHT
-        elif 67.5 <= angle < 112.5:
-            return MovementDirection.UP
-        elif 112.5 <= angle < 157.5:
-            return MovementDirection.UP_LEFT
-        elif angle >= 157.5 or angle < -157.5:
-            return MovementDirection.LEFT
-        elif -157.5 <= angle < -112.5:
-            return MovementDirection.DOWN_LEFT
-        elif -112.5 <= angle < -67.5:
-            return MovementDirection.DOWN
-        elif -67.5 <= angle < -22.5:
-            return MovementDirection.DOWN_RIGHT
-        
-        return MovementDirection.UNKNOWN
+        if abs(dx) > abs(dy):
+            return MovementDirection.RIGHT if dx > 0 else MovementDirection.LEFT
+        return MovementDirection.DOWN if dy > 0 else MovementDirection.UP
 
     def _get_handshape(self, landmarks: List[Landmark]) -> HandShape:
-        """Determine handshape from hand landmarks with comprehensive mapping"""
+        """Determine handshape from hand landmarks"""
         if not landmarks or len(landmarks) < 21:
             return HandShape.UNKNOWN
 
-        # Calculate finger extended states with more detailed analysis
-        finger_states = self._get_detailed_finger_states(landmarks)
-        
+        # Calculate finger extended states
+        finger_states = {
+            'thumb': self._is_finger_extended(landmarks, [0, 2, 3, 4]),
+            'index': self._is_finger_extended(landmarks, [0, 5, 6, 8]),
+            'middle': self._is_finger_extended(landmarks, [0, 9, 10, 12]),
+            'ring': self._is_finger_extended(landmarks, [0, 13, 14, 16]),
+            'pinky': self._is_finger_extended(landmarks, [0, 17, 18, 20])
+        }
+
         # Count extended fingers
         extended_count = sum(finger_states.values())
-        
-        # Check for specific finger extensions
-        thumb_extended = finger_states['thumb']
-        index_extended = finger_states['index']
-        middle_extended = finger_states['middle']
-        ring_extended = finger_states['ring']
-        pinky_extended = finger_states['pinky']
-        
-        # Check for finger curvatures
-        finger_curvatures = self._get_finger_curvatures(landmarks)
-        
-        # Determine handshape based on finger states
+
+        # Determine handshape
         if extended_count == 0:
             return HandShape.FIST
-        
-        # Single finger extensions
-        if thumb_extended and not any([index_extended, middle_extended, ring_extended, pinky_extended]):
-            return HandShape.THUMB_ONLY
-        if index_extended and not any([thumb_extended, middle_extended, ring_extended, pinky_extended]):
-            return HandShape.INDEX_ONLY
-        if middle_extended and not any([thumb_extended, index_extended, ring_extended, pinky_extended]):
-            return HandShape.MIDDLE_ONLY
-        if ring_extended and not any([thumb_extended, index_extended, middle_extended, pinky_extended]):
-            return HandShape.RING_ONLY
-        if pinky_extended and not any([thumb_extended, index_extended, middle_extended, ring_extended]):
-            return HandShape.PINKY_ONLY
-        
-        # Two-finger combinations
-        if index_extended and middle_extended and not any([thumb_extended, ring_extended, pinky_extended]):
+        elif finger_states['index'] and not any([finger_states['middle'],
+                                                 finger_states['ring'],
+                                                 finger_states['pinky']]):
+            return HandShape.POINT
+        elif finger_states['index'] and finger_states['middle'] and not any([
+            finger_states['ring'], finger_states['pinky']]):
             # Check if fingers are separated (V sign)
             tip_index = landmarks[8]
             tip_middle = landmarks[12]
@@ -509,155 +425,25 @@ class SignLanguageAnalyzer:
                 return HandShape.VICTORY
             else:
                 return HandShape.OTHER
-        
-        # C shape (thumb and index forming C)
-        if thumb_extended and index_extended and not any([middle_extended, ring_extended, pinky_extended]):
-            # Check if thumb and index form a C shape
-            thumb_tip = landmarks[4]
-            index_tip = landmarks[8]
-            distance = math.sqrt((thumb_tip.x - index_tip.x)**2 + (thumb_tip.y - index_tip.y)**2)
-            if distance < 0.05:
-                return HandShape.C_SHAPE
+        elif finger_states['thumb'] and finger_states['index'] and not any([
+            finger_states['middle'], finger_states['ring'], finger_states['pinky']]):
             return HandShape.L_SHAPE
-        
-        # Pinch shapes
-        if thumb_extended and index_extended and not any([middle_extended, ring_extended, pinky_extended]):
-            thumb_tip = landmarks[4]
-            index_tip = landmarks[8]
-            distance = math.sqrt((thumb_tip.x - index_tip.x)**2 + (thumb_tip.y - index_tip.y)**2)
-            if distance < 0.03:
-                return HandShape.PINCH
-        
-        # Hook shapes (all fingers curved)
-        if all([curvature > 0.7 for curvature in finger_curvatures.values()]):
-            return HandShape.HOOK
-        
-        # Bent shapes
-        if any([curvature > 0.5 for curvature in finger_curvatures.values()]):
-            return HandShape.BENT
-        
-        # All fingers extended
-        if all(finger_states.values()):
+        elif all(finger_states.values()):
             return HandShape.OPEN
-        
+
         return HandShape.OTHER
 
-    def _get_detailed_finger_states(self, landmarks: List[Landmark]) -> Dict[str, bool]:
-        """Get detailed finger states with confidence"""
-        finger_states = {}
-        
-        # Thumb (special case - different joint indices)
-        thumb_tip = landmarks[4]
-        thumb_ip = landmarks[3]
-        thumb_mcp = landmarks[2]
-        thumb_cmc = landmarks[1]
-        
-        # Calculate thumb extension (different logic)
-        thumb_angle = self._calculate_angle(thumb_cmc, thumb_mcp, thumb_ip)
-        thumb_angle2 = self._calculate_angle(thumb_mcp, thumb_ip, thumb_tip)
-        finger_states['thumb'] = thumb_angle > 140 and thumb_angle2 > 140
-        
-        # Index finger
-        index_tip = landmarks[8]
-        index_pip = landmarks[7]
-        index_mcp = landmarks[6]
-        index_wrist = landmarks[0]
-        
-        index_angle1 = self._calculate_angle(index_wrist, index_mcp, index_pip)
-        index_angle2 = self._calculate_angle(index_mcp, index_pip, index_tip)
-        finger_states['index'] = index_angle1 > 150 and index_angle2 > 150
-        
-        # Middle finger
-        middle_tip = landmarks[12]
-        middle_pip = landmarks[11]
-        middle_mcp = landmarks[10]
-        
-        middle_angle1 = self._calculate_angle(index_wrist, middle_mcp, middle_pip)
-        middle_angle2 = self._calculate_angle(middle_mcp, middle_pip, middle_tip)
-        finger_states['middle'] = middle_angle1 > 150 and middle_angle2 > 150
-        
-        # Ring finger
-        ring_tip = landmarks[16]
-        ring_pip = landmarks[15]
-        ring_mcp = landmarks[14]
-        
-        ring_angle1 = self._calculate_angle(index_wrist, ring_mcp, ring_pip)
-        ring_angle2 = self._calculate_angle(ring_mcp, ring_pip, ring_tip)
-        finger_states['ring'] = ring_angle1 > 150 and ring_angle2 > 150
-        
-        # Pinky finger
-        pinky_tip = landmarks[20]
-        pinky_pip = landmarks[19]
-        pinky_mcp = landmarks[18]
-        
-        pinky_angle1 = self._calculate_angle(index_wrist, pinky_mcp, pinky_pip)
-        pinky_angle2 = self._calculate_angle(pinky_mcp, pinky_pip, pinky_tip)
-        finger_states['pinky'] = pinky_angle1 > 150 and pinky_angle2 > 150
-        
-        return finger_states
+    def _is_finger_extended(self, landmarks: List[Landmark], indices: List[int]) -> bool:
+        """Check if a finger is extended based on joint angles"""
+        try:
+            wrist, mcp, pip, tip = [landmarks[i] for i in indices]
 
-    def _get_finger_curvatures(self, landmarks: List[Landmark]) -> Dict[str, float]:
-        """Calculate curvature for each finger"""
-        curvatures = {}
-        
-        # Index finger curvature
-        index_mcp = landmarks[6]
-        index_pip = landmarks[7]
-        index_tip = landmarks[8]
-        curvatures['index'] = self._calculate_curvature(index_mcp, index_pip, index_tip)
-        
-        # Middle finger curvature
-        middle_mcp = landmarks[10]
-        middle_pip = landmarks[11]
-        middle_tip = landmarks[12]
-        curvatures['middle'] = self._calculate_curvature(middle_mcp, middle_pip, middle_tip)
-        
-        # Ring finger curvature
-        ring_mcp = landmarks[14]
-        ring_pip = landmarks[15]
-        ring_tip = landmarks[16]
-        curvatures['ring'] = self._calculate_curvature(ring_mcp, ring_pip, ring_tip)
-        
-        # Pinky curvature
-        pinky_mcp = landmarks[18]
-        pinky_pip = landmarks[19]
-        pinky_tip = landmarks[20]
-        curvatures['pinky'] = self._calculate_curvature(pinky_mcp, pinky_pip, pinky_tip)
-        
-        return curvatures
+            angle1 = self._calculate_angle(wrist, mcp, pip)
+            angle2 = self._calculate_angle(mcp, pip, tip)
 
-    def _calculate_curvature(self, a: Landmark, b: Landmark, c: Landmark) -> float:
-        """
-        Calculate curvature for three points (a-b-c).
-        Higher value means more curved.
-        Returns normalized curvature between 0 and 1.
-        """
-
-        # vectors BA and BC
-        ba = np.array([a.x - b.x, a.y - b.y, a.z - b.z])
-        bc = np.array([c.x - b.x, c.y - b.y, c.z - b.z])
-
-        # normalize vectors
-        ba_norm = np.linalg.norm(ba)
-        bc_norm = np.linalg.norm(bc)
-
-        if ba_norm == 0 or bc_norm == 0:
-            return 0.0
-
-        ba = ba / ba_norm
-        bc = bc / bc_norm
-
-        # dot product
-        dot = np.dot(ba, bc)
-        dot = np.clip(dot, -1.0, 1.0)
-
-        # angle in radians
-        angle = math.acos(dot)
-
-        # convert to normalized curvature (0 = straight, 1 = fully bent)
-        curvature = angle / math.pi
-
-        return curvature
+            return angle1 > 150 and angle2 > 150
+        except (IndexError, AttributeError):
+            return False
 
     def _calculate_angle(self, a: Landmark, b: Landmark, c: Landmark) -> float:
         """Calculate angle between three points"""
@@ -729,10 +515,6 @@ class SignLanguageAnalyzer:
 
             last_gesture = self.analysis_data['gestures'][-1] if self.analysis_data['gestures'] else None
             if not last_gesture or last_gesture.frame != last_frame.frame:
-                two_handed_type = self._determine_two_handed_type(
-                    last_frame.left_handshape, last_frame.right_handshape,
-                    left_movement_dir, right_movement_dir
-                )
                 gesture = Gesture(
                     type=GestureType.TWO_HANDED_GESTURE,
                     frame=last_frame.frame,
@@ -744,7 +526,6 @@ class SignLanguageAnalyzer:
                     left_palm_orientation=last_frame.left_palm_orientation,
                     right_palm_orientation=last_frame.right_palm_orientation,
                     movement=left_movement_dir,
-                    two_handed_type=two_handed_type,
                     description=f"Both hands moving {left_movement_dir.value} - "
                                 f"Left: {last_frame.left_handshape.value} ({last_frame.left_orientation.value}), "
                                 f"Right: {last_frame.right_handshape.value} ({last_frame.right_orientation.value})"
@@ -795,24 +576,8 @@ class SignLanguageAnalyzer:
                     )
                     self.analysis_data['gestures'].append(gesture)
 
-    def _determine_two_handed_type(self, left_shape: HandShape, right_shape: HandShape,
-                                   left_movement: MovementDirection, right_movement: MovementDirection) -> str:
-        """Determine specific two-handed gesture type"""
-        if left_shape == HandShape.OPEN and right_shape == HandShape.OPEN:
-            if left_movement == MovementDirection.UP and right_movement == MovementDirection.UP:
-                return "hamsymmpar"
-            elif (left_movement == MovementDirection.LEFT and right_movement == MovementDirection.RIGHT or
-                  left_movement == MovementDirection.RIGHT and right_movement == MovementDirection.LEFT):
-                return "hamsymmir"
-        elif left_shape == HandShape.FIST and right_shape == HandShape.FIST:
-            return "hamdoublebent"
-        elif (left_shape == HandShape.THUMB_ONLY and right_shape == HandShape.THUMB_ONLY or
-              left_shape == HandShape.INDEX_ONLY and right_shape == HandShape.INDEX_ONLY):
-            return f"ham{left_shape.value.replace('_only', '')}"
-        return "hamsymmpar"
-
     def generate_sigml(self) -> str:
-        """Generate SiGML XML with comprehensive mapping"""
+        """Generate SiGML XML in the correct format for avatar animation"""
         if not self.analysis_data['gestures']:
             warnings.warn("No gestures detected")
             return ""
@@ -828,17 +593,12 @@ class SignLanguageAnalyzer:
 
         # Build SiGML document
         root = ET.Element('sigml')
-        
-        # Add metadata
-        metadata = ET.SubElement(root, 'metadata')
-        ET.SubElement(metadata, 'title').text = "Sign Language Analysis"
-        ET.SubElement(metadata, 'total_gestures').text = str(len(unique_gestures))
 
         # Add each gesture as a sign
         self.analysis_data['sigml_signs'] = []
 
         if unique_gestures:
-            for i, gesture in enumerate(unique_gestures[:30], 1):  # Limit to first 30 gestures
+            for i, gesture in enumerate(unique_gestures[:10], 1):  # Limit to first 10 gestures
                 sign_elem = self._create_sigml_sign(gesture, i)
                 root.append(sign_elem)
                 self.analysis_data['sigml_signs'].append(sign_elem)
@@ -858,16 +618,11 @@ class SignLanguageAnalyzer:
         return '\n'.join(lines)
 
     def _create_sigml_sign(self, gesture: Gesture, sign_id: int) -> ET.Element:
-        """Create a sign element from detected gesture with comprehensive mapping"""
+        """Create a sign element from detected gesture"""
         gloss = f"sign_{sign_id}"
 
         # Create sign element
         sign_elem = ET.Element('hns_sign', {'gloss': gloss})
-
-        # Add timing information
-        timing = ET.SubElement(sign_elem, 'timing')
-        ET.SubElement(timing, 'start').text = str(gesture.time)
-        ET.SubElement(timing, 'end').text = str(gesture.time + 0.5)  # Approximate duration
 
         # Add non-manual elements (head movements)
         if gesture.type == GestureType.GESTURE_WITH_HEAD_MOVEMENT and gesture.head_movement:
@@ -881,12 +636,9 @@ class SignLanguageAnalyzer:
 
         # Add two-handed marker if needed
         if gesture.type == GestureType.TWO_HANDED_GESTURE:
-            if gesture.two_handed_type:
-                ET.SubElement(manual_elem, gesture.two_handed_type)
-            else:
-                ET.SubElement(manual_elem, 'hamsymmpar')
+            ET.SubElement(manual_elem, 'hamsymmpar')
 
-        # Add handshape with detailed mapping
+        # Add handshape
         handshape = (gesture.hand_shape if gesture.hand_shape else
                      gesture.left_shape if gesture.left_shape else
                      HandShape.OPEN)
@@ -910,7 +662,7 @@ class SignLanguageAnalyzer:
         if palm_elem is not None:
             manual_elem.append(palm_elem)
 
-        # Add movement with detailed mapping
+        # Add movement
         movement = (gesture.movement if gesture.movement else
                     gesture.hand_movement if gesture.hand_movement else
                     None)
@@ -922,28 +674,13 @@ class SignLanguageAnalyzer:
         return sign_elem
 
     def _create_handshape_element(self, handshape: HandShape) -> Optional[ET.Element]:
-        """Create handshape element for SiGML with comprehensive mapping"""
+        """Create handshape element for SiGML"""
         mapping = {
-            # Basic handshapes
             HandShape.FIST: 'hamfist',
             HandShape.OPEN: 'hamflathand',
             HandShape.POINT: 'hamfinger2',
             HandShape.VICTORY: 'hamfinger23',
-            HandShape.L_SHAPE: 'hamthumbopenmod',
-            HandShape.C_SHAPE: 'hamcee12',
-            HandShape.PINCH: 'hampinch12',
-            HandShape.HOOK: 'hamfingerhookmod',
-            HandShape.BENT: 'hamfingerbendmod',
-            HandShape.SEVEN: 'hamfingerstraightmod',
-            
-            # Single finger extensions
-            HandShape.THUMB_ONLY: 'hamthumb',
-            HandShape.INDEX_ONLY: 'hamindexfinger',
-            HandShape.MIDDLE_ONLY: 'hammiddlefinger',
-            HandShape.RING_ONLY: 'hamringfinger',
-            HandShape.PINKY_ONLY: 'hampinky',
-            
-            # Other shapes
+            HandShape.L_SHAPE: 'hamthumboutmod',
             HandShape.OTHER: 'hamflathand',
             HandShape.UNKNOWN: 'hamflathand'
         }
@@ -953,24 +690,14 @@ class SignLanguageAnalyzer:
         return None
 
     def _create_orientation_element(self, orientation: HandOrientation) -> Optional[ET.Element]:
-        """Create hand orientation element for SiGML with 8-direction mapping"""
+        """Create hand orientation element for SiGML"""
         mapping = {
-            # Basic 4 directions
             HandOrientation.UP: 'hamextfingeru',
             HandOrientation.DOWN: 'hamextfingerd',
             HandOrientation.LEFT: 'hamextfingerl',
             HandOrientation.RIGHT: 'hamextfingerr',
-            
-            # 45-degree angles
-            HandOrientation.UP_LEFT: 'hamextfingerul',
-            HandOrientation.UP_RIGHT: 'hamextfingerur',
-            HandOrientation.DOWN_LEFT: 'hamextfingerdl',
-            HandOrientation.DOWN_RIGHT: 'hamextfingerdr',
-            
-            # Forward/Neutral
-            HandOrientation.FORWARD: 'hamextfingero',
-            HandOrientation.NEUTRAL: 'hamextfingero',
-            HandOrientation.UNKNOWN: 'hamextfingero'
+            HandOrientation.NEUTRAL: 'hamextfingeru',
+            HandOrientation.UNKNOWN: 'hamextfingeru'
         }
         element_name = mapping.get(orientation)
         if element_name:
@@ -985,7 +712,6 @@ class SignLanguageAnalyzer:
             PalmOrientation.PALM_LEFT: 'hampalml',
             PalmOrientation.PALM_RIGHT: 'hampalmr',
             PalmOrientation.PALM_FORWARD: 'hamextfingero',
-            PalmOrientation.PALM_BACK: 'hampalmu',  # Back palm
             PalmOrientation.UNKNOWN: 'hamextfingero'
         }
         element_name = mapping.get(palm)
@@ -994,16 +720,12 @@ class SignLanguageAnalyzer:
         return None
 
     def _create_movement_element(self, movement: MovementDirection) -> Optional[ET.Element]:
-        """Create movement element for SiGML with 8-direction mapping"""
+        """Create movement element for SiGML"""
         mapping = {
             MovementDirection.UP: 'hammoveu',
             MovementDirection.DOWN: 'hammoved',
             MovementDirection.LEFT: 'hammovel',
             MovementDirection.RIGHT: 'hammover',
-            MovementDirection.UP_LEFT: 'hammoveul',
-            MovementDirection.UP_RIGHT: 'hammoverur',
-            MovementDirection.DOWN_LEFT: 'hammovedl',
-            MovementDirection.DOWN_RIGHT: 'hammovedr',
             MovementDirection.STILL: None,
             MovementDirection.UNKNOWN: None
         }
@@ -1019,24 +741,19 @@ class SignLanguageAnalyzer:
             MovementDirection.DOWN: 'hamheadmovement',
             MovementDirection.LEFT: 'hamheadmovement',
             MovementDirection.RIGHT: 'hamheadmovement',
-            MovementDirection.UP_LEFT: 'hamheadmovement',
-            MovementDirection.UP_RIGHT: 'hamheadmovement',
-            MovementDirection.DOWN_LEFT: 'hamheadmovement',
-            MovementDirection.DOWN_RIGHT: 'hamheadmovement',
             MovementDirection.STILL: None,
             MovementDirection.UNKNOWN: None
         }
         element_name = mapping.get(movement)
         if element_name:
             elem = ET.Element(element_name)
-            # Map movement to specific head movement type
-            if movement in [MovementDirection.UP, MovementDirection.UP_LEFT, MovementDirection.UP_RIGHT]:
+            if movement == MovementDirection.UP:
                 elem.set('type', 'tilted_backward')
-            elif movement in [MovementDirection.DOWN, MovementDirection.DOWN_LEFT, MovementDirection.DOWN_RIGHT]:
+            elif movement == MovementDirection.DOWN:
                 elem.set('type', 'tilted_forward')
-            elif movement in [MovementDirection.LEFT, MovementDirection.UP_LEFT, MovementDirection.DOWN_LEFT]:
+            elif movement == MovementDirection.LEFT:
                 elem.set('type', 'turned_left')
-            elif movement in [MovementDirection.RIGHT, MovementDirection.UP_RIGHT, MovementDirection.DOWN_RIGHT]:
+            elif movement == MovementDirection.RIGHT:
                 elem.set('type', 'turned_right')
             return elem
         return None
@@ -1106,8 +823,7 @@ def analyze():
                 'hand_orientation': gesture.hand_orientation.value if gesture.hand_orientation else None,
                 'palm_orientation': gesture.palm_orientation.value if gesture.palm_orientation else None,
                 'movement': gesture.movement.value if gesture.movement else None,
-                'head_movement': gesture.head_movement.value if gesture.head_movement else None,
-                'two_handed_type': gesture.two_handed_type
+                'head_movement': gesture.head_movement.value if gesture.head_movement else None
             }
             gestures_data.append(gesture_dict)
         
@@ -1163,7 +879,4 @@ def download_sigml():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
-    
-    
-    
+    app.run(debug=True, host='0.0.0.0', port=5001)   
